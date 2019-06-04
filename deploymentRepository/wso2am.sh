@@ -16,6 +16,7 @@
 # limitations under the License.
 #--------------------------------------------------------------------------------
 
+set -o xtrace
 set -e
 
 # bash variables
