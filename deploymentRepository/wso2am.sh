@@ -3653,7 +3653,9 @@ function get_nodeports(){
     while [ $NP_1 -lt $LOWER ] || [ $NP_2 -lt $LOWER ]
     do
       NP_1=$RANDOM; NP_2=$RANDOM
-      let "NP_1 %= $UPPER"; let "NP_2 %= $UPPER"
+      let "NP_1 %= $UPPER"
+      let "NP_2 %= $UPPER"
+      echo "found $NP_1 and $NP_2"
     done
   fi
   echo -e "[INFO] nodePorts  are set to $NP_1 and $NP_2"
