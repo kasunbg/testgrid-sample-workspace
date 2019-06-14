@@ -54,16 +54,7 @@ function create_resources() {
     done
 
     readiness_deployments
-
-    i=0;
-    for ((i=0; i<$dep_num; i++))
-    do 
-      kubectl expose deployment ${dep[$i]} --name=${dep[$i]}  --type=LoadBalancer -n $namespace
-    done
-
-    readinesss_services
-
-    echo "namespace=$namespace" >> $OUTPUT_DIR/deployment.properties
+    sleep 30
 
 }
 
@@ -95,7 +86,7 @@ function readinesss_services(){
       echo "PublisherUrl=https://$external_ip:9443/publisher" >> $OUTPUT_DIR/deployment.properties
       echo "StoreUrl=https://$external_ip:9443/store" >> $OUTPUT_DIR/deployment.properties
       echo "AdminUrl=https://$external_ip:9443/admin" >> $OUTPUT_DIR/deployment.properties
-      echo "CarbonServerUrl=https://$external_ip:9443/services/" >> $OUTPUT_DIR/deployment.properties
+      echo "CarbonServerUrl=https://localhost:9443/services/" >> $OUTPUT_DIR/deployment.properties
       echo "GatewayHttpsUrl=https://$external_ip:8243" >> $OUTPUT_DIR/deployment.properties
     done
 }

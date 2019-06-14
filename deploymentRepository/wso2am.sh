@@ -812,9 +812,9 @@ cat >> $k8s_obj_file << "EOF"
         <Version>2.6.0</Version>
 EOF
 
-echo "        <HostName>$NODE_IP</HostName>" >> $k8s_obj_file
+echo "        <HostName>wso2.us-central1a-google-clouds.com</HostName>" >> $k8s_obj_file
 
-echo "        <MgtHostName>$NODE_IP</MgtHostName>" >> $k8s_obj_file
+echo "        <MgtHostName>wso2.us-central1a-google-clouds.com</MgtHostName>" >> $k8s_obj_file
 
 cat >> $k8s_obj_file << "EOF"
         <ServerURL>local:/${carbon.context}/services/</ServerURL>
@@ -1010,7 +1010,7 @@ cat >> $k8s_obj_file << "EOF"
             <LoadAPIContextsInServerStartup>true</LoadAPIContextsInServerStartup>
         </APIManagement>
     </Server>
-    user-mgt.xml: |
+  user-mgt.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
     <UserManager>
         <Realm>
