@@ -30,7 +30,7 @@ then
     ZONE="us-central1-a"
     PROJECT_NAME="testgrid" 
 fi
-#TODO
+#TODO write logic to handle the case where ClusterName is specified in the testgrid.yaml.
 #functions
 
 function check_tools() {
@@ -87,6 +87,8 @@ function create_namespace() {
 function set_properties() {
     echo "namespace=$NAME" >> $OUTPUT_DIR/infrastructure.properties
     echo "randomPort=True">> $OUTPUT_DIR/infrastructure.properties
+    echo "kubernetesContainerRegistry=asia.gcr.io" >> $OUTPUT_DIR/infrastructure.properties
+    //todo: provide the gcr registry hostname as well - kubernetesContainerRegistry asia.gcr.io
 }
 
 function infra_creation() {

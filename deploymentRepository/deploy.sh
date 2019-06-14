@@ -69,6 +69,7 @@ function create_resources() {
 
 function readiness_deployments(){
     i=0;
+    // todo add a terminal condition/timeout.
     for ((i=0; i<$dep_num; i++)) ; do 
       num_true=0;
       while [ "$num_true" -eq "0" ] ; do 
