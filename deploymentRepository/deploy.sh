@@ -22,6 +22,7 @@ echo "deploy file is found"
 OUTPUT_DIR=$4
 INPUT_DIR=$2
 source $INPUT_DIR/infrastructure.properties
+source $OUTPUT_DIR/deployment.properties
 
 #definitions
 
@@ -56,11 +57,56 @@ function create_resources() {
     readiness_deployments
     sleep 30
 
+# TODO: install ingress-nginx controller if not found.
+
+# Create a ingress for the services we want to expose to public internet.
+tlskeySecret=testgrid-certs
+ingressName=tg-ingress
+kubectl create secret tls ${tlskeySecret} \
+    --cert keys/testgrid-certs-v2.crt  --key keys/testgrid-certs-v2.key -n $namespace
+
+      cat >> ${ingressName}.yaml << EOF
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ${ingressName}
+  namespace: ${namespace}
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  tls:
+  - hosts:
+    - ${loadBalancerHostName}
+    secretName: ${tlskeySecret}
+  rules:
+EOF
+    i=0;
+    for ((i=0; i<$dep_num; i++))
+    do
+      kubectl expose deployment ${dep[$i]} --name=${dep[$i]} -n $namespace
+#      kubectl expose deployment ${dep[$i]} --name=${dep[$i]}  --type=LoadBalancer -n $namespace
+      cat >> ${ingressName}.yaml << EOF
+  - host: ${loadBalancerHostName}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: ${dep[$i]}
+          servicePort: 9763 # TODO: FIX THIS - this also need to come from the testgrid.yaml.
+EOF
+    done
+    echo Final ingress yaml:
+    cat ${ingressName}.yaml
+    kubectl apply -f ${ingressName}.yaml -n $namespace
+
+    readinesss_services
+
+    echo "namespace=$namespace" >> $OUTPUT_DIR/deployment.properties
 }
 
 function readiness_deployments(){
     i=0;
-    // todo add a terminal condition/timeout.
+    # todo add a terminal condition/timeout.
     for ((i=0; i<$dep_num; i++)) ; do 
       num_true=0;
       while [ "$num_true" -eq "0" ] ; do 
@@ -77,16 +123,18 @@ function readinesss_services(){
     i=0;
     for ((i=0; i<$dep_num; i++)); do 
       external_ip=""
+      echo "Getting the ingress IP address for ingress: ${ingressName}"
       while [ -z $external_ip ]; do
         echo "Waiting for end point..."
-        external_ip=$(kubectl get service ${dep[$i]} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+#        external_ip=$(kubectl get service ${dep[$i]} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}" --namespace ${namespace})
+        external_ip=$(kubectl get ingress ${ingressName} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}" --namespace ${namespace})
         [ -z "$external_ip" ] && sleep 10
       done
-      echo "KeyManagerUrl=https://localhost:9443/services/" >> $OUTPUT_DIR/deployment.properties 
-      echo "PublisherUrl=https://$external_ip:9443/publisher" >> $OUTPUT_DIR/deployment.properties
-      echo "StoreUrl=https://$external_ip:9443/store" >> $OUTPUT_DIR/deployment.properties
-      echo "AdminUrl=https://$external_ip:9443/admin" >> $OUTPUT_DIR/deployment.properties
-      echo "CarbonServerUrl=https://localhost:9443/services/" >> $OUTPUT_DIR/deployment.properties
+      echo "KeyManagerUrl=https://$external_ip/services/" >> $OUTPUT_DIR/deployment.properties
+      echo "PublisherUrl=https://$external_ip/publisher" >> $OUTPUT_DIR/deployment.properties
+      echo "StoreUrl=https://$external_ip/store" >> $OUTPUT_DIR/deployment.properties
+      echo "AdminUrl=https://$external_ip/admin" >> $OUTPUT_DIR/deployment.properties
+      echo "CarbonServerUrl=https://$external_ip/services/" >> $OUTPUT_DIR/deployment.properties
       echo "GatewayHttpsUrl=https://$external_ip:8243" >> $OUTPUT_DIR/deployment.properties
     done
 }

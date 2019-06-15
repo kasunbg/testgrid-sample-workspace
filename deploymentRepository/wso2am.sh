@@ -30,6 +30,8 @@ WUMUsername=''; WUMPassword=''
 
 # testgrid directory
 OUTPUT_DIR=$4; INPUT_DIR=$2
+wso2apim_hostname=wso2am-1a2b3.gke.wso2testgrid.com # randomize
+wso2apim_mgt_hostname=${wso2apim_hostname}
 
 # bash functions
 function usage(){
@@ -812,9 +814,9 @@ cat >> $k8s_obj_file << "EOF"
         <Version>2.6.0</Version>
 EOF
 
-echo "        <HostName>wso2.us-central1a-google-clouds.com</HostName>" >> $k8s_obj_file
+echo "        <HostName>${wso2apim_hostname}</HostName>" >> $k8s_obj_file
 
-echo "        <MgtHostName>wso2.us-central1a-google-clouds.com</MgtHostName>" >> $k8s_obj_file
+echo "        <MgtHostName>${wso2apim_mgt_hostname}</MgtHostName>" >> $k8s_obj_file
 
 cat >> $k8s_obj_file << "EOF"
         <ServerURL>local:/${carbon.context}/services/</ServerURL>
@@ -3828,6 +3830,12 @@ function deploy(){
         echoBold "\tusername: admin\n"
         echoBold "\tpassword: admin\n"
         echoBold "2. Follow <getting-started-link> to start using WSO2 API Manager.\n\n"
+    else
+        echo >> ${OUTPUT_DIR}/deployment.properties << EOF
+loadBalancerHostName=${wso2apim_hostname}
+loadBalancerHostName.1=${wso2apim_hostname}
+loadBalancerHostName.2=${wso2apim_hostname}
+EOF
     fi
 }
 
