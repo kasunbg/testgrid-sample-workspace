@@ -49,6 +49,14 @@ function create_resources() {
       exit 1
     fi
 
+    if [ -z ${loadBalancerHostName} ]; then
+        echo WARN: loadBalancerHostName not found in deployment.properties. Generating a random name under \
+        *.gke.wso2testgrid.com CN
+        loadBalancerHostName=wso2am-$(($RANDOM % 10000)).gke.wso2testgrid.com # randomized hostname
+    else
+        echo DEBUG: loadBalanceHostName: ${loadBalancerHostName}
+    fi
+
     i=0;
     for ((i=0; i<$no_yamls; i++))
     do 
@@ -56,7 +64,7 @@ function create_resources() {
     done
 
     readiness_deployments
-    sleep 30
+    sleep 10
 
 # TODO: install ingress-nginx controller if not found.
 
@@ -67,7 +75,6 @@ kubectl create secret tls ${tlskeySecret} \
     --cert deploymentRepository/keys/testgrid-certs-v2.crt  \
     --key deploymentRepository/keys/testgrid-certs-v2.key -n $namespace
 
-    echo DEBUG: loadBalanceHostName: ${loadBalancerHostName}
     cat >> ${ingressName}.yaml << EOF
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -134,12 +141,13 @@ function readinesss_services(){
         external_ip=$(kubectl get ingress ${ingressName} --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}" --namespace ${namespace})
         [ -z "$external_ip" ] && sleep 10
       done
-      echo "KeyManagerUrl=https://$external_ip/services/" >> $OUTPUT_DIR/deployment.properties
-      echo "PublisherUrl=https://$external_ip/publisher" >> $OUTPUT_DIR/deployment.properties
-      echo "StoreUrl=https://$external_ip/store" >> $OUTPUT_DIR/deployment.properties
-      echo "AdminUrl=https://$external_ip/admin" >> $OUTPUT_DIR/deployment.properties
-      echo "CarbonServerUrl=https://$external_ip/services/" >> $OUTPUT_DIR/deployment.properties
-      echo "GatewayHttpsUrl=https://$external_ip:8243" >> $OUTPUT_DIR/deployment.properties
+      echo Ingress hostname:  ${loadBalancerHostName}, IP: $external_ip
+      echo "KeyManagerUrl=https://${loadBalancerHostName}/services/" >> $OUTPUT_DIR/deployment.properties
+      echo "PublisherUrl=https://${loadBalancerHostName}/publisher" >> $OUTPUT_DIR/deployment.properties
+      echo "StoreUrl=https://${loadBalancerHostName}/store" >> $OUTPUT_DIR/deployment.properties
+      echo "AdminUrl=https://${loadBalancerHostName}/admin" >> $OUTPUT_DIR/deployment.properties
+      echo "CarbonServerUrl=https://${loadBalancerHostName}/services/" >> $OUTPUT_DIR/deployment.properties
+      echo "GatewayHttpsUrl=https://${loadBalancerHostName}:8243" >> $OUTPUT_DIR/deployment.properties
     done
 }
 

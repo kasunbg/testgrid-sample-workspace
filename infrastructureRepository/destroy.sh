@@ -25,7 +25,8 @@ source $INPUT_DIR/deployment.properties
 
 function delete_resources() {
   echo "running destroy.sh"
-  kubectl delete namespaces $namespace
+  echo DEBUG: Temporarily disabling kubectl delete namespace
+#  kubectl delete namespaces $namespace
 }
 
 delete_resources
