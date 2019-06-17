@@ -3836,6 +3836,7 @@ loadBalancerHostName=${wso2apim_hostname}
 loadBalancerHostName.1=${wso2apim_hostname}
 loadBalancerHostName.2=${wso2apim_hostname}
 EOF
+        echo Current deployment.properties: `cat ${OUTPUT_DIR}/deployment.properties`
     fi
 }
 

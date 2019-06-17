@@ -24,6 +24,7 @@ INPUT_DIR=$2
 source $INPUT_DIR/infrastructure.properties
 source $OUTPUT_DIR/deployment.properties
 
+cat $OUTPUT_DIR/deployment.properties
 #definitions
 
 YAMLS=$yamls
@@ -63,9 +64,11 @@ function create_resources() {
 tlskeySecret=testgrid-certs
 ingressName=tg-ingress
 kubectl create secret tls ${tlskeySecret} \
-    --cert keys/testgrid-certs-v2.crt  --key keys/testgrid-certs-v2.key -n $namespace
+    --cert deploymentRepository/keys/testgrid-certs-v2.crt  \
+    --key deploymentRepository/keys/testgrid-certs-v2.key -n $namespace
 
-      cat >> ${ingressName}.yaml << EOF
+    echo DEBUG: loadBalanceHostName: ${loadBalancerHostName}
+    cat >> ${ingressName}.yaml << EOF
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -83,6 +86,7 @@ EOF
     i=0;
     for ((i=0; i<$dep_num; i++))
     do
+      echo
       kubectl expose deployment ${dep[$i]} --name=${dep[$i]} -n $namespace
 #      kubectl expose deployment ${dep[$i]} --name=${dep[$i]}  --type=LoadBalancer -n $namespace
       cat >> ${ingressName}.yaml << EOF

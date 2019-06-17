@@ -88,7 +88,7 @@ function set_properties() {
     echo "namespace=$NAME" >> $OUTPUT_DIR/infrastructure.properties
     echo "randomPort=True">> $OUTPUT_DIR/infrastructure.properties
     echo "kubernetesContainerRegistry=asia.gcr.io" >> $OUTPUT_DIR/infrastructure.properties
-    //todo: provide the gcr registry hostname as well - kubernetesContainerRegistry asia.gcr.io
+    #todo: provide the gcr registry hostname as well - kubernetesContainerRegistry asia.gcr.io
 }
 
 function infra_creation() {
