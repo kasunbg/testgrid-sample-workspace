@@ -26,7 +26,7 @@ source $INPUT_DIR/testplan-props.properties
 if [ -z $ClusterName ]
 then
     SERVICE_ACCOUNT="gke-bot@testgrid.iam.gserviceaccount.com"
-    CLUSTER_NAME="chathurangi-test-cluster"
+    CLUSTER_NAME="dev-test-cluster"
     ZONE="us-central1-a"
     PROJECT_NAME="testgrid" 
 fi
