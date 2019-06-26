@@ -34,6 +34,9 @@ no_yamls=${#yamls[@]}
 dep=($deployments)
 dep_num=${#dep[@]}
 
+# TODO: DEBUG parameters. Remove these.
+namespace=deploymenth7xs6
+
 function create_k8s_resources() {
 
     if [ -z $YAMLS ]
@@ -61,7 +64,7 @@ function create_k8s_resources() {
     for ((i=0; i<$no_yamls; i++))
     do
       ls
-      #kubectl create -f ${yamls[$i]}
+      #TODO kubectl create -f ${yamls[$i]}
     done
 
     readiness_deployments
