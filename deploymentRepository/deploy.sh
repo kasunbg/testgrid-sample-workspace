@@ -34,7 +34,7 @@ no_yamls=${#yamls[@]}
 dep=($deployments)
 dep_num=${#dep[@]}
 
-function create_resources() {
+function create_k8s_resources() {
 
     if [ -z $YAMLS ]
     then 
@@ -59,8 +59,9 @@ function create_resources() {
 
     i=0;
     for ((i=0; i<$no_yamls; i++))
-    do 
-      kubectl create -f ${yamls[$i]}
+    do
+      ls
+      #kubectl create -f ${yamls[$i]}
     done
 
     readiness_deployments
@@ -113,6 +114,7 @@ EOF
     readinesss_services
 
     echo "namespace=$namespace" >> $OUTPUT_DIR/deployment.properties
+    echo "loadBalancerHostName=$loadBalancerHostName" >> $OUTPUT_DIR/deployment.properties
 }
 
 function readiness_deployments(){
@@ -148,7 +150,55 @@ function readinesss_services(){
       echo "AdminUrl=https://${loadBalancerHostName}/admin" >> $OUTPUT_DIR/deployment.properties
       echo "CarbonServerUrl=https://${loadBalancerHostName}/services/" >> $OUTPUT_DIR/deployment.properties
       echo "GatewayHttpsUrl=https://${loadBalancerHostName}:8243" >> $OUTPUT_DIR/deployment.properties
+      echo "external_ip=$external_ip" >> $OUTPUT_DIR/deployment.properties
     done
 }
 
-create_resources
+function add_route53_entry() {
+    env=${TESTGRID_ENVIRONMENT} || 'dev'
+    if [[ "${env}" != "dev" ]] && [[ "${env}" != 'prod' ]]; then
+        echo "Not configuring route53 DNS entries since the environment is not dev/prod. You need to manually add
+        '${external_ip} ${loadBalancerHostName}' into your /etc/hosts."
+        return;
+    fi
+
+    command -v aws >/dev/null 2>&1 || { echo >&2 "I optionally require aws but it's not installed. "; return; }
+    echo "Adding route53 entry to access Kubernetes ingress from the AWS ec2 instances"
+    testgrid_hosted_zone_id=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='wso2testgrid.com.'].Id" --output text)
+
+    cat > route53-change-resource-record-sets.json << EOF
+{
+  "Comment": "testgrid job change batch req for mapping - ${external_ip} ${loadBalancerHostName}",
+  "Changes": [
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "${loadBalancerHostName}",
+        "Type": "A",
+        "TTL": 60,
+        "ResourceRecords": [
+          {
+            "Value": "${external_ip}"
+          }
+        ]
+      }
+    }
+  ]
+}
+EOF
+cat route53-change-resource-record-sets.json
+
+change_id=$(aws route53 change-resource-record-sets --hosted-zone-id ${testgrid_hosted_zone_id} \
+    --change-batch file://route53-change-resource-record-sets.json \
+    --query "ChangeInfo.Id" --output text)
+aws route53 wait resource-record-sets-changed --id ${change_id}
+
+echo "AWS Route53 DNS server configured to access the ingress IP  ${external_ip} via hostname ${loadBalancerHostName}"
+echo
+}
+
+#DEBUG parameters:
+TESTGRID_ENVIRONMENT=dev
+
+create_k8s_resources
+add_route53_entry
