@@ -60,7 +60,6 @@ function create_k8s_resources() {
     i=0;
     for ((i=0; i<$no_yamls; i++))
     do
-      ls
       kubectl create -f ${yamls[$i]}
     done
 
@@ -118,6 +117,7 @@ EOF
 }
 
 function readiness_deployments(){
+    start=`date +%s`
     i=0;
     # todo add a terminal condition/timeout.
     for ((i=0; i<$dep_num; i++)) ; do 
@@ -130,9 +130,14 @@ function readiness_deployments(){
         fi
       done
     done
+
+    end=`date +%s`
+    runtime=$((end-start))
+    echo "Deployment '${dep[$i]}' got ready in ${runtime} seconds."
 }
 
 function readinesss_services(){
+    start=`date +%s`
     i=0;
     for ((i=0; i<$dep_num; i++)); do 
       external_ip=""
@@ -152,6 +157,11 @@ function readinesss_services(){
       echo "GatewayHttpsUrl=https://${loadBalancerHostName}:8243" >> $OUTPUT_DIR/deployment.properties
       echo "external_ip=$external_ip" >> $OUTPUT_DIR/deployment.properties
     done
+
+    end=`date +%s`
+    runtime=$((end-start))
+    echo "Kubernetes Ingress service '${ingressName}' got ready in ${runtime} seconds."
+
 }
 
 function add_route53_entry() {
@@ -163,7 +173,9 @@ function add_route53_entry() {
     fi
 
     command -v aws >/dev/null 2>&1 || { echo >&2 "I optionally require aws but it's not installed. "; return; }
-    echo "Adding route53 entry to access Kubernetes ingress from the AWS ec2 instances"
+    echo "Adding route53 entry to access Kubernetes ingress from the AWS ec2 instances."
+    echo "IP/Host mapping: ${external_ip} ${loadBalancerHostName}"
+    echo
     testgrid_hosted_zone_id=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='wso2testgrid.com.'].Id" --output text)
 
     if [[ "$?" -ne 0 ]]; then
