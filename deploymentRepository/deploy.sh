@@ -34,9 +34,6 @@ no_yamls=${#yamls[@]}
 dep=($deployments)
 dep_num=${#dep[@]}
 
-# TODO: DEBUG parameters. Remove these.
-namespace=deploymenth7xs6
-
 function create_k8s_resources() {
 
     if [ -z $YAMLS ]
@@ -64,7 +61,7 @@ function create_k8s_resources() {
     for ((i=0; i<$no_yamls; i++))
     do
       ls
-      #TODO kubectl create -f ${yamls[$i]}
+      kubectl create -f ${yamls[$i]}
     done
 
     readiness_deployments
@@ -169,6 +166,13 @@ function add_route53_entry() {
     echo "Adding route53 entry to access Kubernetes ingress from the AWS ec2 instances"
     testgrid_hosted_zone_id=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='wso2testgrid.com.'].Id" --output text)
 
+    if [[ "$?" -ne 0 ]]; then
+        echo
+        echo "WARN: Failed to list hosted zones. Check whether you have enough AWS permissions. Route53 entry creation aborted."
+        echo
+        return;
+    fi
+
     cat > route53-change-resource-record-sets.json << EOF
 {
   "Comment": "testgrid job change batch req for mapping - ${external_ip} ${loadBalancerHostName}",
@@ -200,7 +204,7 @@ echo "AWS Route53 DNS server configured to access the ingress IP  ${external_ip}
 echo
 }
 
-#DEBUG parameters:
+#DEBUG parameters: TODO: remove
 TESTGRID_ENVIRONMENT=dev
 
 create_k8s_resources
