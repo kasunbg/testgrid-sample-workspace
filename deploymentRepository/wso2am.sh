@@ -30,7 +30,7 @@ WUMUsername=''; WUMPassword=''
 
 # testgrid directory
 OUTPUT_DIR=$4; INPUT_DIR=$2
-wso2apim_hostname=wso2am-1a2b3.gke.wso2testgrid.com # randomize
+wso2apim_hostname=wso2am-$(($RANDOM % 10000)).gke.wso2testgrid.com
 wso2apim_mgt_hostname=${wso2apim_hostname}
 
 is_testgrid=false
