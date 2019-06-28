@@ -18,6 +18,7 @@
 
 set -o xtrace
 echo "deploy file is found"
+dryRun=False
 
 OUTPUT_DIR=$4
 INPUT_DIR=$2
@@ -57,11 +58,13 @@ function create_k8s_resources() {
         echo DEBUG: loadBalanceHostName: ${loadBalancerHostName}
     fi
 
-    i=0;
-    for ((i=0; i<$no_yamls; i++))
-    do
-      kubectl create -f ${yamls[$i]}
-    done
+    if [[ ${dryRun^^} != TRUE ]]; then
+        i=0;
+        for ((i=0; i<$no_yamls; i++))
+        do
+          kubectl create -f ${yamls[$i]}
+        done
+    fi
 
     readiness_deployments
     sleep 10
@@ -75,7 +78,7 @@ kubectl create secret tls ${tlskeySecret} \
     --cert deploymentRepository/keys/testgrid-certs-v2.crt  \
     --key deploymentRepository/keys/testgrid-certs-v2.key -n $namespace
 
-    cat >> ${ingressName}.yaml << EOF
+    cat > ${ingressName}.yaml << EOF
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -83,9 +86,12 @@ metadata:
   namespace: ${namespace}
   annotations:
     kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   tls:
   - hosts:
+    - mgt-${loadBalancerHostName}
+    - gw-${loadBalancerHostName}
     - ${loadBalancerHostName}
     secretName: ${tlskeySecret}
   rules:
@@ -97,13 +103,24 @@ EOF
       kubectl expose deployment ${dep[$i]} --name=${dep[$i]} -n $namespace
 #      kubectl expose deployment ${dep[$i]} --name=${dep[$i]}  --type=LoadBalancer -n $namespace
       cat >> ${ingressName}.yaml << EOF
+  - host: mgt-${loadBalancerHostName}
+    http:
+      paths:
+      - backend:
+          serviceName: ${dep[$i]}
+          servicePort: 9443 # TODO: FIX THIS - this also need to come from the testgrid.yaml.
+  - host: gw-${loadBalancerHostName}
+    http:
+      paths:
+      - backend:
+          serviceName: ${dep[$i]}
+          servicePort: 8243 # TODO: FIX THIS - this also need to come from the testgrid.yaml.
   - host: ${loadBalancerHostName}
     http:
       paths:
-      - path: /
-        backend:
+      - backend:
           serviceName: ${dep[$i]}
-          servicePort: 9763 # TODO: FIX THIS - this also need to come from the testgrid.yaml.
+          servicePort: 9443 # TODO: FIX THIS - this also need to come from the testgrid.yaml.
 EOF
     done
     echo Final ingress yaml:
@@ -133,7 +150,8 @@ function readiness_deployments(){
 
     end=`date +%s`
     runtime=$((end-start))
-    echo "Deployment '${dep[$i]}' got ready in ${runtime} seconds."
+    echo "Deployment \"${dep}\" got ready in ${runtime} seconds."
+    echo
 }
 
 function readinesss_services(){
@@ -192,14 +210,22 @@ function add_route53_entry() {
     {
       "Action": "CREATE",
       "ResourceRecordSet": {
-        "Name": "${loadBalancerHostName}",
-        "Type": "A",
-        "TTL": 60,
-        "ResourceRecords": [
-          {
-            "Value": "${external_ip}"
-          }
-        ]
+        "Name": "mgt-${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" } ]
+      }
+    },
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "gw-${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" } ]
+      }
+    },
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" } ]
       }
     }
   ]

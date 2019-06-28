@@ -41,14 +41,22 @@ function delete_route53_entry() {
     {
       "Action": "DELETE",
       "ResourceRecordSet": {
-        "Name": "${loadBalancerHostName}",
-        "Type": "A",
-        "TTL": 60,
-        "ResourceRecords": [
-          {
-            "Value": "${external_ip}"
-          }
-        ]
+        "Name": "mgt-${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" }]
+      }
+    },
+    {
+      "Action": "DELETE",
+      "ResourceRecordSet": {
+        "Name": "gw-${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" }]
+      }
+    },
+    {
+      "Action": "DELETE",
+      "ResourceRecordSet": {
+        "Name": "${loadBalancerHostName}", "Type": "A", "TTL": 60,
+        "ResourceRecords": [ { "Value": "${external_ip}" }]
       }
     }
   ]
