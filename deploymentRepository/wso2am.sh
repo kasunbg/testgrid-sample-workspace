@@ -30,7 +30,7 @@ WUMUsername=''; WUMPassword=''
 
 # testgrid directory
 OUTPUT_DIR=$4; INPUT_DIR=$2
-wso2apim_hostname=wso2am-$(($RANDOM % 10000)).gke.wso2testgrid.com
+wso2apim_hostname=wso2am-$(($RANDOM % 10000))a.gke.wso2testgrid.com
 wso2apim_mgt_hostname=${wso2apim_hostname}
 
 is_testgrid=false
@@ -3903,9 +3903,11 @@ function deploy(){
     # encode in base64
     secdata=`echo -n $authstring | base64`
 
+    echo secdata=$secdata
     for i in $secdata; do
       str_sec=$str_sec$i
     done
+    echo str_sec=$str_sec
 
     get_nodeports
 
@@ -3927,7 +3929,7 @@ function deploy(){
         echoBold "\tpassword: admin\n"
         echoBold "2. Follow <getting-started-link> to start using WSO2 API Manager.\n\n"
     else
-        cat >> ${OUTPUT_DIR}/deployment.properties << EOF
+        cat > ${OUTPUT_DIR}/deployment.properties << EOF
 loadBalancerHostName=${wso2apim_hostname}
 loadBalancerHostName.1=${wso2apim_hostname}
 loadBalancerHostName.2=${wso2apim_hostname}
